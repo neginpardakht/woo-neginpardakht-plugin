@@ -145,7 +145,9 @@ function wc_gateway_neginpardakht_init()
 
                 $this->payment_endpoint = 'https://api.neginpardakht.ir/v1/transaction/request';
                 $this->verify_endpoint = 'https://api.neginpardakht.ir/v1/transaction/verify';
-
+                // $this->payment_endpoint = 'https://localhost:8030/v1/transaction/request';
+                // $this->verify_endpoint = 'https://localhost:8030/v1/transaction/verify';
+    
                 $this->success_message = $this->get_option('success_message');
                 $this->failed_message = $this->get_option('failed_message');
 
@@ -338,6 +340,9 @@ function wc_gateway_neginpardakht_init()
                     'reject_unsafe_urls' => false
                 );
 
+                // var_dump($args);
+                // die();
+
                 $response = $this->call_gateway_endpoint($this->payment_endpoint, $args);
                 
                 if (is_wp_error($response)) {
@@ -347,6 +352,7 @@ function wc_gateway_neginpardakht_init()
 
                     exit;
                 }
+
                 
                 $http_status = wp_remote_retrieve_response_code($response);
                 $result = wp_remote_retrieve_body($response);
@@ -366,9 +372,17 @@ function wc_gateway_neginpardakht_init()
                         $note .= sprintf(__('error message: %s', 'woo-neginpardakht-gateway'), $result->error_message);
                         $order->add_order_note($note);
                         $notice = $result->error_message;
-                        wc_add_notice($notice, 'error');
+                        wc_add_notice($result->error_message . '<br/>کد خطا : ' . $result->error_code, 'error');
                     }
 
+                    wp_redirect($woocommerce->cart->get_checkout_url());
+
+                    exit;
+                }
+
+               
+                if (!$result->status || !empty($result->error_code) || !empty($result->error_message)) {
+                    wc_add_notice($result->error_message . '<br/>کد خطا : ' . $result->error_code, 'error');
                     wp_redirect($woocommerce->cart->get_checkout_url());
 
                     exit;
@@ -515,8 +529,7 @@ function wc_gateway_neginpardakht_init()
                         $note .= sprintf(__('error code: %s', 'woo-neginpardakht-gateway'), $result->error_code);
                         $note .= '<br/>';
                         $note .= sprintf(__('error message: %s', 'woo-neginpardakht-gateway'), $result->error_message);
-                        $notice = $result->error_message;
-                        wc_add_notice($notice, 'error');
+                        wc_add_notice($result->error_message . '<br/>کد خطا : ' . $result->error_code, 'error');
                     }
 
                     $order->add_order_note($note);
@@ -600,7 +613,7 @@ function wc_gateway_neginpardakht_init()
                 $notice .= '<br/>';
                 $notice .= __('لطفا دوباره سعی کنید و در صورت عدم رفع مشکل با مدیر وب سایت تماس بگیرید.', 'woo-neginpardakht-gateway');
                 $notice = $notice . "<br>" . $msg;
-                wc_add_notice($notice, 'error');
+                wc_add_notice($result->error_message . '<br/>کد خطا : ' . $result->error_code, 'error');
             }
 
             /**
@@ -727,7 +740,7 @@ function wc_gateway_neginpardakht_init()
                         break;
                 }
 
-                return $msg . ' - کد وضعیت: ' . $msgNumber;
+                return $msg . '<br/> کد خطا : ' . $msgNumber;
 
             }
 
